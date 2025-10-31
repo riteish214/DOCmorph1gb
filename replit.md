@@ -4,12 +4,14 @@
 DocMorph is a comprehensive Flask-based PDF manipulation toolkit with a professional dark-themed interface. It provides all essential PDF operations including merge, split, convert, compress, rotate, and encrypt, plus secure file and text sharing capabilities.
 
 ## Recent Changes
-- **October 31, 2025**: Initial project setup
+- **October 31, 2025**: Initial project setup and convert feature enhancement
   - Installed Python 3.11 and all required dependencies
   - Created Flask application with all PDF operation routes
   - Implemented dark-themed UI with Bootstrap 5
   - Added drag-and-drop file upload functionality
   - Configured automatic temporary file cleanup for privacy
+  - Fixed convert feature with improved error handling
+  - Added comprehensive TXT format support (PDF↔TXT, DOCX↔TXT)
 
 ## Project Architecture
 
@@ -54,7 +56,8 @@ DocMorph is a comprehensive Flask-based PDF manipulation toolkit with a professi
 ## Features
 1. **Merge PDFs**: Combine multiple PDF files into one
 2. **Split PDFs**: Extract specific pages or page ranges
-3. **Convert Files**: Convert between PDF, Word (DOCX), and PowerPoint formats
+3. **Convert Files**: Convert between PDF, Word (DOCX), and Text (TXT) formats
+   - Supported conversions: PDF→DOCX, PDF→TXT, DOCX→PDF, DOCX→TXT, TXT→PDF, TXT→DOCX
 4. **Compress PDFs**: Reduce file size while maintaining quality
 5. **Rotate PDFs**: Rotate pages in 90-degree increments
 6. **Secure PDFs**: Add password protection

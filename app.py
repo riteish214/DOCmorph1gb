@@ -124,6 +124,7 @@ def split_pdf():
 @app.route('/convert', methods=['GET', 'POST'])
 def convert_file():
     if request.method == 'POST':
+        temp_input = None
         try:
             file = request.files.get('file')
             convert_to = request.form.get('convert_to', 'pdf')
@@ -132,6 +133,9 @@ def convert_file():
                 return jsonify({'error': 'Please upload a file'}), 400
             
             filename = secure_filename(file.filename)
+            if '.' not in filename:
+                return jsonify({'error': 'Invalid file name'}), 400
+                
             file_ext = filename.rsplit('.', 1)[1].lower()
             temp_input = os.path.join(app.config['UPLOAD_FOLDER'], f'temp_{int(time.time())}.{file_ext}')
             file.save(temp_input)
@@ -140,40 +144,91 @@ def convert_file():
             output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
             
             if file_ext == 'pdf' and convert_to == 'docx':
-                cv = Converter(temp_input)
-                cv.convert(output_path)
-                cv.close()
-            elif file_ext in ['doc', 'docx'] and convert_to == 'pdf':
+                try:
+                    cv = Converter(temp_input)
+                    cv.convert(output_path, start=0)
+                    cv.close()
+                except Exception as conv_error:
+                    if temp_input and os.path.exists(temp_input):
+                        os.remove(temp_input)
+                    return jsonify({'error': f'PDF to DOCX conversion failed: {str(conv_error)}. The PDF may contain unsupported elements or complex formatting.'}), 500
+            elif file_ext == 'pdf' and convert_to == 'txt':
+                pdf_reader = PdfReader(temp_input)
+                text_content = []
+                for page in pdf_reader.pages:
+                    extracted_text = page.extract_text()
+                    if extracted_text:
+                        text_content.append(extracted_text)
+                    else:
+                        text_content.append('[No extractable text on this page]')
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write('\n\n'.join(text_content))
+            elif file_ext == 'docx' and convert_to == 'pdf':
                 doc = Document(temp_input)
-                packet = io.BytesIO()
-                can = canvas.Canvas(packet, pagesize=letter)
+                can = canvas.Canvas(output_path, pagesize=letter)
                 y_position = 750
                 
                 for para in doc.paragraphs:
                     text = para.text
                     if text.strip():
-                        can.drawString(50, y_position, text[:100])
-                        y_position -= 20
-                        if y_position < 50:
-                            can.showPage()
-                            y_position = 750
+                        lines = text.split('\n')
+                        for line in lines:
+                            if line.strip():
+                                can.drawString(50, y_position, line[:90])
+                                y_position -= 15
+                                if y_position < 50:
+                                    can.showPage()
+                                    y_position = 750
                 
                 can.save()
-                packet.seek(0)
+            elif file_ext == 'txt' and convert_to == 'pdf':
+                with open(temp_input, 'r', encoding='utf-8') as f:
+                    text_content = f.read()
                 
-                with open(output_path, 'wb') as f:
-                    f.write(packet.read())
+                can = canvas.Canvas(output_path, pagesize=letter)
+                y_position = 750
+                
+                lines = text_content.split('\n')
+                for line in lines:
+                    if y_position < 50:
+                        can.showPage()
+                        y_position = 750
+                    can.drawString(50, y_position, line[:90])
+                    y_position -= 15
+                
+                can.save()
+            elif file_ext == 'docx' and convert_to == 'txt':
+                doc = Document(temp_input)
+                text_content = []
+                for para in doc.paragraphs:
+                    text_content.append(para.text)
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write('\n'.join(text_content))
+            elif file_ext == 'txt' and convert_to == 'docx':
+                with open(temp_input, 'r', encoding='utf-8') as f:
+                    text_content = f.read()
+                doc = Document()
+                for line in text_content.split('\n'):
+                    doc.add_paragraph(line)
+                doc.save(output_path)
             else:
-                os.remove(temp_input)
-                return jsonify({'error': 'Conversion not supported'}), 400
+                if temp_input and os.path.exists(temp_input):
+                    os.remove(temp_input)
+                return jsonify({'error': f'Conversion from {file_ext.upper()} to {convert_to.upper()} is not supported'}), 400
             
-            os.remove(temp_input)
+            if temp_input and os.path.exists(temp_input):
+                os.remove(temp_input)
             
             return jsonify({
                 'success': True,
                 'download_url': url_for('download_file', filename=output_filename)
             })
         except Exception as e:
+            if temp_input and os.path.exists(temp_input):
+                try:
+                    os.remove(temp_input)
+                except:
+                    pass
             return jsonify({'error': str(e)}), 500
     
     return render_template('convert.html')

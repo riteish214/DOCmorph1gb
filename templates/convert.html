@@ -10,7 +10,7 @@
                 <h4 class="mb-0"><i class="fas fa-exchange-alt"></i> Convert Files</h4>
             </div>
             <div class="card-body">
-                <p class="text-secondary">Convert between PDF, Word, and PowerPoint formats.</p>
+                <p class="text-secondary">Convert between PDF, Word (DOCX), and Text (TXT) formats.</p>
                 
                 <form id="convertForm" enctype="multipart/form-data">
                     <div class="mb-3">
@@ -18,7 +18,7 @@
                         <div class="drop-zone" id="dropZone">
                             <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
                             <p>Drag & drop file here or click to browse</p>
-                            <input type="file" id="fileInput" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="d-none">
+                            <input type="file" id="fileInput" name="file" accept=".pdf,.docx,.txt" class="d-none">
                         </div>
                     </div>
 
@@ -28,7 +28,7 @@
                             <option value="">Select format...</option>
                             <option value="pdf">PDF</option>
                             <option value="docx">Word (DOCX)</option>
-                            <option value="pptx">PowerPoint (PPTX)</option>
+                            <option value="txt">Text (TXT)</option>
                         </select>
                     </div>
 
