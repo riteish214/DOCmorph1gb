@@ -149,9 +149,27 @@ def convert_file():
                     cv.convert(output_path, start=0)
                     cv.close()
                 except Exception as conv_error:
-                    if temp_input and os.path.exists(temp_input):
-                        os.remove(temp_input)
-                    return jsonify({'error': f'PDF to DOCX conversion failed: {str(conv_error)}. The PDF may contain unsupported elements or complex formatting.'}), 500
+                    try:
+                        pdf_reader = PdfReader(temp_input)
+                        doc = Document()
+                        doc.add_heading('Converted from PDF', 0)
+                        
+                        for i, page in enumerate(pdf_reader.pages, 1):
+                            extracted_text = page.extract_text()
+                            if extracted_text and extracted_text.strip():
+                                doc.add_heading(f'Page {i}', level=1)
+                                for paragraph in extracted_text.split('\n\n'):
+                                    if paragraph.strip():
+                                        doc.add_paragraph(paragraph.strip())
+                            else:
+                                doc.add_heading(f'Page {i}', level=1)
+                                doc.add_paragraph('[No extractable text on this page]')
+                        
+                        doc.save(output_path)
+                    except Exception as fallback_error:
+                        if temp_input and os.path.exists(temp_input):
+                            os.remove(temp_input)
+                        return jsonify({'error': f'PDF to DOCX conversion failed. Try converting to TXT format instead.'}), 500
             elif file_ext == 'pdf' and convert_to == 'txt':
                 pdf_reader = PdfReader(temp_input)
                 text_content = []
