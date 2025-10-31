@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Share Files & Text - DocMorph{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header text-white" style="background-color: #9333ea;">
+                <h4 class="mb-0"><i class="fas fa-share-alt"></i> Share Files & Text</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary">Share files (up to 1GB) or text securely with temporary links that expire in 24 hours.</p>
+                
+                <ul class="nav nav-tabs mb-3" id="shareTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="file-tab" data-bs-toggle="tab" data-bs-target="#file" type="button">
+                            <i class="fas fa-file"></i> Share File
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button">
+                            <i class="fas fa-font"></i> Share Text
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="shareTabContent">
+                    <div class="tab-pane fade show active" id="file" role="tabpanel">
+                        <form id="shareFileForm" enctype="multipart/form-data">
+                            <input type="hidden" name="share_type" value="file">
+                            <div class="mb-3">
+                                <label class="form-label">Upload File (Max 1GB)</label>
+                                <div class="drop-zone" id="dropZone">
+                                    <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                                    <p>Drag & drop file here or click to browse</p>
+                                    <input type="file" id="fileInput" name="file" class="d-none">
+                                </div>
+                            </div>
+
+                            <div class="progress mb-3 d-none" id="progressBar">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                            </div>
+
+                            <div id="fileResult" class="alert d-none"></div>
+
+                            <button type="submit" class="btn w-100" style="background-color: #9333ea; color: white;" id="fileSubmitBtn">
+                                <i class="fas fa-share-alt"></i> Generate Share Link
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="text" role="tabpanel">
+                        <form id="shareTextForm">
+                            <input type="hidden" name="share_type" value="text">
+                            <div class="mb-3">
+                                <label for="textContent" class="form-label">Text Content</label>
+                                <textarea class="form-control" id="textContent" name="text_content" rows="6" placeholder="Enter text to share..."></textarea>
+                            </div>
+
+                            <div id="textResult" class="alert d-none"></div>
+
+                            <button type="submit" class="btn w-100" style="background-color: #9333ea; color: white;" id="textSubmitBtn">
+                                <i class="fas fa-share-alt"></i> Generate Share Link
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('shareFileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const fileInput = document.getElementById('fileInput');
+    
+    if (!fileInput.files.length) {
+        document.getElementById('fileResult').className = 'alert alert-danger';
+        document.getElementById('fileResult').innerHTML = 'Please select a file';
+        document.getElementById('fileResult').classList.remove('d-none');
+        return;
+    }
+    
+    document.getElementById('progressBar').classList.remove('d-none');
+    document.getElementById('fileSubmitBtn').disabled = true;
+    
+    try {
+        const response = await fetch('/share', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('fileResult').className = 'alert alert-success';
+            document.getElementById('fileResult').innerHTML = 'Share link generated! Expires: ' + data.expiry + '<br><input type="text" class="form-control mt-2" value="' + data.share_link + '" readonly onclick="this.select()"><small class="text-muted">Click to copy</small>';
+        } else {
+            document.getElementById('fileResult').className = 'alert alert-danger';
+            document.getElementById('fileResult').innerHTML = data.error || 'An error occurred';
+        }
+        document.getElementById('fileResult').classList.remove('d-none');
+    } catch (error) {
+        document.getElementById('fileResult').className = 'alert alert-danger';
+        document.getElementById('fileResult').innerHTML = 'An error occurred: ' + error.message;
+        document.getElementById('fileResult').classList.remove('d-none');
+    } finally {
+        document.getElementById('progressBar').classList.add('d-none');
+        document.getElementById('fileSubmitBtn').disabled = false;
+    }
+});
+
+document.getElementById('shareTextForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const textContent = document.getElementById('textContent').value;
+    
+    if (!textContent.trim()) {
+        document.getElementById('textResult').className = 'alert alert-danger';
+        document.getElementById('textResult').innerHTML = 'Please enter some text';
+        document.getElementById('textResult').classList.remove('d-none');
+        return;
+    }
+    
+    document.getElementById('textSubmitBtn').disabled = true;
+    
+    try {
+        const response = await fetch('/share', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('textResult').className = 'alert alert-success';
+            document.getElementById('textResult').innerHTML = 'Share link generated! Expires: ' + data.expiry + '<br><input type="text" class="form-control mt-2" value="' + data.share_link + '" readonly onclick="this.select()"><small class="text-muted">Click to copy</small>';
+        } else {
+            document.getElementById('textResult').className = 'alert alert-danger';
+            document.getElementById('textResult').innerHTML = data.error || 'An error occurred';
+        }
+        document.getElementById('textResult').classList.remove('d-none');
+    } catch (error) {
+        document.getElementById('textResult').className = 'alert alert-danger';
+        document.getElementById('textResult').innerHTML = 'An error occurred: ' + error.message;
+        document.getElementById('textResult').classList.remove('d-none');
+    } finally {
+        document.getElementById('textSubmitBtn').disabled = false;
+    }
+});
+</script>
+{% endblock %}
